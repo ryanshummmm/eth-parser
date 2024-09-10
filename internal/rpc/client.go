@@ -76,7 +76,6 @@ func jsonRPCCall(method string, params []interface{}) (models.JSONRPCResponse, e
 
 	var response models.JSONRPCResponse
 
-	fmt.Printf("Response body: %s\n", string(body))
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return models.JSONRPCResponse{}, fmt.Errorf("[jsonRPCCall] unmarshal wrong, err=%v", err)
