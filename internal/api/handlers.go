@@ -43,7 +43,7 @@ func (h *Handler) GetCurrentBlockHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	currentBlock := h.parser.GetCurrentBlock()
-	err := json.NewEncoder(w).Encode(map[string]int{"currentBlock": currentBlock})
+	err := json.NewEncoder(w).Encode(map[string]int64{"currentBlock": currentBlock})
 	if err != nil {
 		h.logger.Printf("Get current block: Error encoding response: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

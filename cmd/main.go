@@ -25,7 +25,7 @@ func main() {
 	// Initialize storage
 	memoryStorage := storage.NewMemoryStorage()
 	// Initialize parser
-	parser := ethereum.NewEthParser(memoryStorage)
+	parser := ethereum.NewEthParser(memoryStorage, logger)
 	// Initialize API handler
 	handler := api.NewHandler(parser, logger)
 

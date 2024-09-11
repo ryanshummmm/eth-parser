@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func GetLatestBlockNumber() (int, error) {
+func GetLatestBlockNumber() (int64, error) {
 	response, err := jsonRPCCall(common.EthBlockNumber, []interface{}{})
 	if err != nil {
 		return 0, err
@@ -21,7 +21,7 @@ func GetLatestBlockNumber() (int, error) {
 	return utils.HexToInt(blockHex)
 }
 
-func GetBlockByNumber(blockNumber int) (models.Block, error) {
+func GetBlockByNumber(blockNumber int64) (models.Block, error) {
 	blockHex := fmt.Sprintf("0x%x", blockNumber)
 	response, err := jsonRPCCall(common.EthGetBlockByNumber, []interface{}{blockHex, true})
 	if err != nil {

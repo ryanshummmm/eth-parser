@@ -7,7 +7,7 @@ import (
 )
 
 type MemoryStorage struct {
-	currentBlock        int
+	currentBlock        int64
 	subscribedAddresses map[string]bool
 	transactions        map[string][]models.Transaction
 	mu                  sync.RWMutex
@@ -20,14 +20,14 @@ func NewMemoryStorage() *MemoryStorage {
 	}
 }
 
-func (ms *MemoryStorage) GetCurrentBlock() int {
+func (ms *MemoryStorage) GetCurrentBlock() int64 {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
 	return ms.currentBlock
 }
 
-func (ms *MemoryStorage) SetCurrentBlock(block int) {
+func (ms *MemoryStorage) SetCurrentBlock(block int64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	ms.currentBlock = block

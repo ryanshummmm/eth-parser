@@ -3,8 +3,8 @@ package storage
 import "eth-parser/pkg/models"
 
 type Storage interface {
-	GetCurrentBlock() int
-	SetCurrentBlock(number int)
+	GetCurrentBlock() int64
+	SetCurrentBlock(number int64)
 	GetSubscribeList() []string
 	Subscribe(address string) bool
 	Unsubscribe(address string) bool
