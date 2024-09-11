@@ -24,3 +24,8 @@ const CloudFlareRpcUrl = "https://cloudflare-eth.com"
 - Unsubscribe: POST /unsubscribe
 - Get Transactions: GET /transactions?address=0x...
 - Get Subscribe List: GET /subscribe-list
+
+## Testing
+Run
+
+`go test -v ./...`
