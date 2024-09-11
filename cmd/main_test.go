@@ -6,16 +6,21 @@ import (
 	"eth-parser/internal/api"
 	"eth-parser/internal/ethereum"
 	"eth-parser/internal/storage"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestMainIntegration(t *testing.T) {
+
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
 	memStorage := storage.NewMemoryStorage()
-	parser := ethereum.NewEthParser(memStorage)
-	handler := api.NewHandler(parser)
+	parser := ethereum.NewEthParser(memStorage, logger)
+	handler := api.NewHandler(parser, logger)
 
 	parser.Start()
 	defer parser.Stop()
@@ -43,8 +48,19 @@ func TestMainIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer resp.Body.Close()
+
 		if resp.StatusCode != http.StatusOK {
 			t.Errorf("Expected status OK; got %v", resp.Status)
+		}
+
+		var result map[string]int
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, exists := result["currentBlock"]; !exists {
+			t.Error("Response does not contain 'currentBlock' key")
 		}
 	})
 

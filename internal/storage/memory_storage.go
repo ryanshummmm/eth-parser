@@ -8,16 +8,13 @@ import (
 
 type MemoryStorage struct {
 	currentBlock        int64
-	subscribedAddresses map[string]bool
-	transactions        map[string][]models.Transaction
+	subscribedAddresses sync.Map
+	transactions        sync.Map
 	mu                  sync.RWMutex
 }
 
 func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{
-		subscribedAddresses: make(map[string]bool),
-		transactions:        make(map[string][]models.Transaction),
-	}
+	return &MemoryStorage{}
 }
 
 func (ms *MemoryStorage) GetCurrentBlock() int64 {
@@ -34,57 +31,60 @@ func (ms *MemoryStorage) SetCurrentBlock(block int64) {
 }
 
 func (ms *MemoryStorage) GetSubscribeList() []string {
-	keys := make([]string, 0, len(ms.subscribedAddresses))
-	for key := range ms.subscribedAddresses {
-		keys = append(keys, key)
-	}
-	return keys
+	var addresses []string
+
+	ms.subscribedAddresses.Range(func(key, value interface{}) bool {
+		addresses = append(addresses, key.(string))
+		return true
+	})
+	return addresses
 }
 
 func (ms *MemoryStorage) Subscribe(address string) bool {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
 	address = strings.ToLower(address)
-	if !ms.subscribedAddresses[address] {
-		ms.subscribedAddresses[address] = true
-	}
-	return true
+	_, loaded := ms.subscribedAddresses.LoadOrStore(address, true)
+
+	return !loaded
 }
 
 func (ms *MemoryStorage) Unsubscribe(address string) bool {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
 	address = strings.ToLower(address)
+	_, loaded := ms.subscribedAddresses.LoadAndDelete(address)
 
-	if ms.subscribedAddresses[address] {
-		delete(ms.subscribedAddresses, address)
-		return true
-	}
-	return false
+	return loaded
 }
 
 func (ms *MemoryStorage) IsSubscribed(address string) bool {
-	ms.mu.RLock()
-	defer ms.mu.RUnlock()
 	address = strings.ToLower(address)
-	return ms.subscribedAddresses[address]
+	_, ok := ms.subscribedAddresses.Load(address)
+
+	return ok
 }
 
 func (ms *MemoryStorage) GetTransactions(address string) []models.Transaction {
-	ms.mu.RLock()
-	defer ms.mu.RUnlock()
 	address = strings.ToLower(address)
-	return ms.transactions[address]
+
+	if txs, ok := ms.transactions.Load(address); ok {
+		return txs.([]models.Transaction)
+	}
+	return nil
 }
 
 func (ms *MemoryStorage) AddTransaction(tx models.Transaction) {
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
+	ms.addTransactionForAddress(strings.ToLower(tx.From), tx)
+	ms.addTransactionForAddress(strings.ToLower(tx.To), tx)
+}
 
-	if ms.subscribedAddresses[tx.From] {
-		ms.transactions[tx.From] = append(ms.transactions[tx.From], tx)
-	}
-	if ms.subscribedAddresses[tx.To] {
-		ms.transactions[tx.To] = append(ms.transactions[tx.To], tx)
+func (ms *MemoryStorage) addTransactionForAddress(address string, tx models.Transaction) {
+	if ms.IsSubscribed(address) {
+		ms.mu.Lock()
+		defer ms.mu.Unlock()
+
+		var txs []models.Transaction
+		if existingTxs, ok := ms.transactions.Load(address); ok {
+			txs = existingTxs.([]models.Transaction)
+		}
+		txs = append(txs, tx)
+		ms.transactions.Store(address, txs)
 	}
 }

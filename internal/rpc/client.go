@@ -9,12 +9,23 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
+var (
+	httpClient *http.Client
+)
+
+func init() {
+	httpClient = &http.Client{
+		Timeout: 10 * time.Second,
+	}
+}
+
 func GetLatestBlockNumber() (int64, error) {
-	response, err := jsonRPCCall(common.EthBlockNumber, []interface{}{})
+	response, err := jsonRPCCall(common.EthBlockNumber, nil)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to get latest block number: %w", err)
 	}
 
 	blockHex := response.Result.(string)
@@ -25,25 +36,17 @@ func GetBlockByNumber(blockNumber int64) (models.Block, error) {
 	blockHex := fmt.Sprintf("0x%x", blockNumber)
 	response, err := jsonRPCCall(common.EthGetBlockByNumber, []interface{}{blockHex, true})
 	if err != nil {
-		return models.Block{}, err
+		return models.Block{}, fmt.Errorf("failed to get block %d: %w", blockNumber, err)
 	}
 
-	result, ok := response.Result.(map[string]interface{})
-	if !ok {
-		return models.Block{}, fmt.Errorf("invalid response result format")
-	}
-
-	// 将result序列化为JSON
-	resultBytes, err := json.Marshal(result)
+	resultBytes, err := json.Marshal(response.Result)
 	if err != nil {
-		return models.Block{}, err
+		return models.Block{}, fmt.Errorf("failed to marshal block %d: %w", blockNumber, err)
 	}
 
-	// 将JSON解析为Block结构
 	var block models.Block
-	err = json.Unmarshal(resultBytes, &block)
-	if err != nil {
-		return models.Block{}, err
+	if err := json.Unmarshal(resultBytes, &block); err != nil {
+		return models.Block{}, fmt.Errorf("failed to unmarshal block %d: %w", blockNumber, err)
 	}
 
 	return block, nil
